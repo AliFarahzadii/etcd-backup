@@ -1,0 +1,31 @@
+Step 1 - Connect to the k8S Cluster and Check ETCD Version
+-----------------------------------------------------------------------------------------------------
+$ kubectl cluster-info
+$ kubectl get nodes
+$ kubectl get pods -n kube-system
+$ kubectl describe pods pod_name -n kube-system
+Step 2 - Download and Install “etcdctl” Tool
+---------------------------------------------------------------------------
+Reference: https://etcd.io/docs/v3.5/install/
+$ curl -L https://storage.googleapis.com/etcd/v... -o /tmp/etcd-v3.5.10-linux-amd64.tar.gz
+$ tar xzvf /tmp/etcd-v3.5.10-linux-amd64.tar.gz -C /tmp
+$ cp /tmp/etcd-v3.5.10-linux-amd64/etcdctl /usr/local/bin/
+Step 3 - Take a Backup from ETCD database using “etcdctl” Tool
+------------------------------------------------------------------------------------------------------------
+Reference: https://kubernetes.io/docs/tasks/admi...
+$ ETCDCTL_API=3 etcdctl snapshot save /root/snapshot.db --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key
+$ ETCDCTL_API=3 etcdctl --write-out=table snapshot status /root/snapshot.db
+Step 4 - Delete the deployments/pods in the cluster
+------------------------------------------------------------------------------------------
+$ kubectl delete deployment deployment_name
+Step 5 - Create a New ETCD volume directory and restore the Snapshot
+
+----------------------------------------------------------------------------------------------------------------------
+$ mkdir /var/lib/etcd-bkp
+$ ETCDCTL_API=3 etcdctl snapshot restore /root/snapshot.db --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key --data-dir=/var/lib/etcd-bkp
+Step 6 - Update the ETCD static pod definition to use the New ETCD Volume
+--------------------------------------------------------------------------------------------------------------------
+$ vim /etc/kubernetes/manifest/etcd.yaml
+Step 7 - Inspect the cluster after the ETCD backup restoration
+----------------------------------------------------------------------------------------------------------
+$ kubectl get all 
